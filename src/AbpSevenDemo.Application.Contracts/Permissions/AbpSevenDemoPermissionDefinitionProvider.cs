@@ -16,6 +16,11 @@ public class AbpSevenDemoPermissionDefinitionProvider : PermissionDefinitionProv
 
         //Define your own permissions here. Example:
         //myGroup.AddPermission(AbpSevenDemoPermissions.MyPermission1, L("Permission:MyPermission1"));
+
+        var customerPermission = myGroup.AddPermission(AbpSevenDemoPermissions.Customers.Default, L("Permission:Customers"));
+        customerPermission.AddChild(AbpSevenDemoPermissions.Customers.Create, L("Permission:Create"));
+        customerPermission.AddChild(AbpSevenDemoPermissions.Customers.Edit, L("Permission:Edit"));
+        customerPermission.AddChild(AbpSevenDemoPermissions.Customers.Delete, L("Permission:Delete"));
     }
 
     private static LocalizableString L(string name)

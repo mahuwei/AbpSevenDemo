@@ -1,4 +1,6 @@
-﻿using System;
+using System.Collections.Generic;
+using Microsoft.AspNetCore.Authorization;
+using System;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using AbpSevenDemo.Localization;
@@ -117,6 +119,14 @@ public class AbpSevenDemoMenuContributor : IMenuContributor
         //Administration->Settings
         administration.SetSubItemOrder(SettingManagementMenus.GroupName, 6);
 
+        context.Menu.AddItem(
+            new ApplicationMenuItem(
+                AbpSevenDemoMenus.Customers,
+                l["Menu:Customers"],
+                url: "/customers",
+                icon: "fa fa-user-alt",
+                requiredPermissionName: AbpSevenDemoPermissions.Customers.Default)
+        );
         return Task.CompletedTask;
     }
 

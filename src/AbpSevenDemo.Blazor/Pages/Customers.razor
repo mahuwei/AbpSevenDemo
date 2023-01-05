@@ -1,0 +1,267 @@
+@page "/customers"
+@attribute [Authorize(AbpSevenDemoPermissions.Customers.Default)]
+@using AbpSevenDemo.Customers
+@using AbpSevenDemo.Permissions
+@using Volo.Abp.AspNetCore.Components.Messages
+@using Volo.Abp.AspNetCore.Components.Web.Theming.Layout
+@using Volo.Abp.Http.Client
+@using Microsoft.AspNetCore.Authorization
+@inherits AbpSevenDemoComponentBase
+@inject ICustomersAppService CustomersAppService
+@inject IUiMessageService UiMessageService
+@inject IRemoteServiceConfigurationProvider RemoteServiceConfigurationProvider
+@inject NavigationManager NavigationManager
+
+@* ************************* PAGE HEADER ************************* *@
+<PageHeader Title="@L["Customers"]" BreadcrumbItems="BreadcrumbItems" Toolbar="Toolbar">
+
+</PageHeader>
+
+@* ************************* SEARCH ************************* *@
+<Card>
+    <CardBody>
+        <Form id="CustomerSearchForm" class="mb-3">
+            <Addons>
+                <Addon AddonType="AddonType.Body">
+                    <TextEdit @bind-Text="@Filter.FilterText"
+                              Autofocus="true"
+                              Placeholder="@L["Search"]">
+                    </TextEdit>
+                </Addon>
+                <Addon AddonType="AddonType.End">
+                    <SubmitButton Form="CustomerSearchForm" Clicked="GetCustomersAsync">
+                        <Icon Name="IconName.Search" Class="me-1"></Icon>@L["Search"]
+                    </SubmitButton>
+                </Addon>
+            </Addons>
+        </Form>
+    </CardBody>
+</Card>
+
+@* ************************* DATA GRID ************************* *@
+<Card>
+    <CardBody>
+        <DataGrid TItem="CustomerDto"
+                  Data="CustomerList"
+                  ReadData="OnDataGridReadAsync"
+                  TotalItems="TotalCount"
+                  ShowPager="true"
+                  Responsive="true"
+                  PageSize="PageSize">
+            <DataGridColumns>
+                <DataGridEntityActionsColumn TItem="CustomerDto" @ref="@EntityActionsColumn">
+                    <DisplayTemplate>
+                        <EntityActions TItem="CustomerDto" EntityActionsColumn="@EntityActionsColumn">
+                            <EntityAction TItem="CustomerDto"
+                                          Visible="@CanEditCustomer"
+                                          Clicked="async () => await OpenEditCustomerModalAsync(context)"
+                                          Text="@L["Edit"]">
+                            </EntityAction>
+                            <EntityAction TItem="CustomerDto"
+                                          Visible="@CanDeleteCustomer"
+                                          Clicked="() => DeleteCustomerAsync(context)"
+                                          ConfirmationMessage="@(() => L["DeleteConfirmationMessage"])"
+                                          Text="@L["Delete"]">
+                            </EntityAction>
+                        </EntityActions>
+                    </DisplayTemplate>
+                </DataGridEntityActionsColumn>
+
+                <DataGridColumn TItem="CustomerDto"
+                                Field="Name"
+                                Caption="@L["Name"]">
+                </DataGridColumn>
+
+                <DataGridColumn TItem="CustomerDto"
+                                Field="MobileNumber"
+                                Caption="@L["MobileNumber"]">
+                </DataGridColumn>
+
+                <DataGridColumn TItem="CustomerDto"
+                                Field="Email"
+                                Caption="@L["Email"]">
+                </DataGridColumn>
+
+                <DataGridColumn TItem="CustomerDto"
+                                Field="IsCompany"
+                                Caption="@L["IsCompany"]">
+                    <DisplayTemplate>
+                        @if(context.IsCompany){
+                            <Icon TextColor="TextColor.Success" Name="@IconName.Check"/>
+                        }
+                        else{
+                            <Icon TextColor="TextColor.Danger" Name="@IconName.Times"/>
+                        }
+                    </DisplayTemplate>
+                </DataGridColumn>
+
+
+                <DataGridColumn TItem="CustomerDto"
+                                Field="Address"
+                                Caption="@L["Address"]">
+                </DataGridColumn>
+
+            </DataGridColumns>
+        </DataGrid>
+    </CardBody>
+</Card>
+
+@* ************************* CREATE MODAL ************************* *@
+<Modal @ref="CreateCustomerModal" Closing="@CreateCustomerModal.CancelClosingModalWhenFocusLost">
+    <ModalContent Centered="true">
+        <Form id="CreateCustomerForm">
+            <ModalHeader>
+                <ModalTitle>@L["NewCustomer"]</ModalTitle>
+                <CloseButton Clicked="CloseCreateCustomerModalAsync"/>
+            </ModalHeader>
+            <ModalBody>
+                <Validations @ref="@NewCustomerValidations"
+                             Mode="ValidationMode.Auto"
+                             Model="@NewCustomer"
+                             ValidateOnLoad="false">
+
+
+                    <Validation>
+                        <Field>
+                            <FieldLabel>@L["Name"] *</FieldLabel>
+                            <TextEdit @bind-Text="@NewCustomer.Name" MaxLength="CustomerConsts.NameMaxLength">
+                                <Feedback>
+                                    <ValidationError/>
+                                </Feedback>
+                            </TextEdit>
+                        </Field>
+                    </Validation>
+
+
+                    <Validation>
+                        <Field>
+                            <FieldLabel>@L["MobileNumber"] *</FieldLabel>
+                            <TextEdit @bind-Text="@NewCustomer.MobileNumber" MaxLength="CustomerConsts.MobileNumberMaxLength">
+                                <Feedback>
+                                    <ValidationError/>
+                                </Feedback>
+                            </TextEdit>
+                        </Field>
+                    </Validation>
+
+
+                    <Validation>
+                        <Field>
+                            <FieldLabel>@L["Email"]</FieldLabel>
+                            <TextEdit @bind-Text="@NewCustomer.Email" MaxLength="CustomerConsts.EmailMaxLength" Role="TextRole.Email">
+                                <Feedback>
+                                    <ValidationError/>
+                                </Feedback>
+                            </TextEdit>
+                        </Field>
+                    </Validation>
+
+
+                    <Field>
+                        <Check TValue="bool" @bind-Checked="@NewCustomer.IsCompany">@L["IsCompany"]</Check>
+                    </Field>
+
+                    <Validation>
+                        <Field>
+                            <FieldLabel>@L["Address"]</FieldLabel>
+                            <TextEdit @bind-Text="@NewCustomer.Address" MaxLength="CustomerConsts.AddressMaxLength">
+                                <Feedback>
+                                    <ValidationError/>
+                                </Feedback>
+                            </TextEdit>
+                        </Field>
+                    </Validation>
+
+
+                </Validations>
+            </ModalBody>
+            <ModalFooter>
+                <Button Color="Color.Secondary"
+                        Clicked="CloseCreateCustomerModalAsync">
+                    @L["Cancel"]
+                </Button>
+                <SubmitButton Form="CreateCustomerForm" Clicked="CreateCustomerAsync"/>
+            </ModalFooter>
+        </Form>
+    </ModalContent>
+</Modal>
+
+@* ************************* EDIT MODAL ************************* *@
+<Modal @ref="EditCustomerModal" Closing="@EditCustomerModal.CancelClosingModalWhenFocusLost">
+    <ModalContent Centered="true">
+        <Form id="EditCustomerForm">
+            <ModalHeader>
+                <ModalTitle>@L["Update"]</ModalTitle>
+                <CloseButton Clicked="CloseEditCustomerModalAsync"/>
+            </ModalHeader>
+            <ModalBody>
+                <Validations @ref="@EditingCustomerValidations"
+                             Mode="ValidationMode.Auto"
+                             Model="@EditingCustomer"
+                             ValidateOnLoad="false">
+
+
+                    <Validation>
+                        <Field>
+                            <FieldLabel>@L["Name"] *</FieldLabel>
+                            <TextEdit @bind-Text="@EditingCustomer.Name" MaxLength="CustomerConsts.NameMaxLength">
+                                <Feedback>
+                                    <ValidationError/>
+                                </Feedback>
+                            </TextEdit>
+                        </Field>
+                    </Validation>
+
+
+                    <Validation>
+                        <Field>
+                            <FieldLabel>@L["MobileNumber"] *</FieldLabel>
+                            <TextEdit @bind-Text="@EditingCustomer.MobileNumber" MaxLength="CustomerConsts.MobileNumberMaxLength">
+                                <Feedback>
+                                    <ValidationError/>
+                                </Feedback>
+                            </TextEdit>
+                        </Field>
+                    </Validation>
+
+
+                    <Validation>
+                        <Field>
+                            <FieldLabel>@L["Email"]</FieldLabel>
+                            <TextEdit @bind-Text="@EditingCustomer.Email" MaxLength="CustomerConsts.EmailMaxLength" Role="TextRole.Email">
+                                <Feedback>
+                                    <ValidationError/>
+                                </Feedback>
+                            </TextEdit>
+                        </Field>
+                    </Validation>
+
+
+                    <Field>
+                        <Check TValue="bool" @bind-Checked="@EditingCustomer.IsCompany">@L["IsCompany"]</Check>
+                    </Field>
+
+                    <Validation>
+                        <Field>
+                            <FieldLabel>@L["Address"]</FieldLabel>
+                            <TextEdit @bind-Text="@EditingCustomer.Address" MaxLength="CustomerConsts.AddressMaxLength">
+                                <Feedback>
+                                    <ValidationError/>
+                                </Feedback>
+                            </TextEdit>
+                        </Field>
+                    </Validation>
+
+
+                </Validations>
+            </ModalBody>
+            <ModalFooter>
+                <Button Color="Color.Secondary"
+                        Clicked="CloseEditCustomerModalAsync">
+                    @L["Cancel"]
+                </Button>
+                <SubmitButton Form="CreateCustomerForm" Clicked="UpdateCustomerAsync"/>
+            </ModalFooter>
+        </Form>
+    </ModalContent>
+</Modal>
