@@ -1,0 +1,29 @@
+# tye application configuration file
+# read all about it at https://github.com/dotnet/tye
+#
+# when you've given us a try, we'd love to know what you think:
+#    https://aka.ms/AA7q20u
+#
+name: abpsevendemo
+services:
+- name: abpsevendemo-authserver
+  project: src/AbpSevenDemo.AuthServer/AbpSevenDemo.AuthServer.csproj
+  bindings:
+    - name: https
+      protocol: https
+      port: 44336
+
+- name: abpsevendemo-httpapi-host
+  project: src/AbpSevenDemo.HttpApi.Host/AbpSevenDemo.HttpApi.Host.csproj
+  bindings:
+    - name: https
+      protocol: https
+      port: 44353
+
+- name: abpsevendemo-blazor
+  project: src/AbpSevenDemo.Blazor/AbpSevenDemo.Blazor.csproj
+  bindings:
+    - name: https
+      protocol: https
+      port: 44383
+
